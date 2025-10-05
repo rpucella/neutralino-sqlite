@@ -95,8 +95,15 @@
       }
 
       async _query(obj) {
+        return this._sql("query", obj)
+      }
+
+      async _exec(obj) {
+        return this._sql("exec", obj)
+      }
+
+     async _sql(eventName, obj) {
         const extension = "sqlite-ext"
-        const event = "query"
         // callId is a unique identifier for the call so that we can catch the response.
         const callId = this._callId
         this._callId += 1
@@ -104,13 +111,13 @@
           const listener = (event) => {
             const data = event.detail
             if (data._respId === callId) {
-              Neutralino.events.off("query", listener)
+              Neutralino.events.off(eventName, listener)
               resolve(data)
             }
           }
-          Neutralino.events.on("query", listener)
+          Neutralino.events.on(eventName, listener)
         })
-        await Neutralino.extensions.dispatch(extension, event, {...obj, _respId: callId, _respEvent: "query"})
+        await Neutralino.extensions.dispatch(extension, eventName, {...obj, _respId: callId, _respEvent: eventName})
         const data = await response
         return data
       }
@@ -124,15 +131,15 @@
         
       async fetchImage(index) {
         return this._query({
-            sql: `select url, image from images where id = $1`,
+            sql: "select url, image from images where id = $1",
             params: [index]
         })
       }
         
       async addImage(index, name, url) {
         const base64 = await imageToBase64(url)
-        return this._query({
-            sql: `insert into images (id, url, image) values ($1, $2, $3)`,
+        return this._exec({
+            sql: "insert into images (id, url, image) values ($1, $2, $3)",
             params: [index, name, base64]
         })
       }

@@ -1,4 +1,4 @@
-module github.com/rpucella/go-neutralinojs-sqlite
+module github.com/rpucella/neutralino-ext-sqlite
 
 go 1.23.3
 

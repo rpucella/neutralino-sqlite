@@ -44,7 +44,7 @@ func mkProcessMsg(db *sql.DB) neutralinoext.ProcessFn {
 		case "query":
 			return processQuery(db, data)
 		case "exec":
-			return nil, nil //processExec(db, data)
+			return processExec(db, data)
 		default:
 			return nil, nil
 		}
@@ -89,6 +89,29 @@ func processQuery(db *sql.DB, data any) (map[string]any, error) {
 	}
 	result := make(map[string]any)
 	result["rows"] = resultRows
+	return result, nil
+}
+
+func processExec(db *sql.DB, data any) (map[string]any, error) {
+	dataObj, ok := data.(map[string]any)
+	if !ok {
+		return nil, errors.New("data not an object")
+	}
+	query, err := getString(dataObj, "sql")
+	if err != nil {
+		return nil, err
+	}
+	params, err := getList(dataObj, "params")
+	if err != nil {
+		return nil, err
+	}
+	_, err = db.Exec(query, params...)
+	if err != nil {
+		return nil, fmt.Errorf("cannot exec: %w", err)
+	}
+	// Return an empty JSON object.
+	result := make(map[string]any)
+	result["done"] = true
 	return result, nil
 }
 
