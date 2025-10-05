@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Pictures</title>
+
+  <style>
+    
+    body {
+        padding: 48px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        box-sizing: border-box;
+        gap: 48px;
+    }
+
+    h1 {
+        margin: 0;
+    }
+    
+    #controls {
+        display: flex;
+        flex-direction: row;
+        gap: 16px;
+        width: 50%;
+    }
+
+    #controls input {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #dddddd;
+    }
+
+    #controls button {
+        width: 100px;
+        padding: 8px;
+    }
+
+    #image {
+        max-width: 50%;
+        max-height: 50%;
+        /* display: none; */
+    }
+
+    #images {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        width: 50%;
+    }
+
+    #images div {
+        border: 1px solid #dddddd;
+        width: 100%;
+        padding: 8px 16px;
+        box-sizing: border-box;
+        cursor: pointer;
+    }
+
+    #images div.selected {
+        background: #dddddd;
+    }
+
+  </style>
+
+  <script src="/js/neutralino.js"></script>
+  
+</head>
+
+<body>
+
+  <h1>Image Viewer</h1>
+
+  <img id="image">
+
+  <div id="controls">
+    <input id="load-input" type="text" placeholder="Image URL">
+    <button id="load-button">Load</button>
+  </div>
+
+  <div id="images">
+  </div>
+
+  <script>
+
+    // RPC over websocket idea from:
+    // https://github.com/small-tech/site.js-websocket-rpc-example/blob/master/readme.md
+
+  
+    class API {
+      constructor() {
+        this._callId = 0
+      }
+
+      async _query(obj) {
+        const extension = "sqlite-ext"
+        const event = "query"
+        // callId is a unique identifier for the call so that we can catch the response.
+        const callId = this._callId
+        this._callId += 1
+        const response = new Promise((resolve) => {
+          const listener = (event) => {
+            const data = event.detail
+            if (data._respId === callId) {
+              Neutralino.events.off("query", listener)
+              resolve(data)
+            }
+          }
+          Neutralino.events.on("query", listener)
+        })
+        await Neutralino.extensions.dispatch(extension, event, {...obj, _respId: callId, _respEvent: "query"})
+        const data = await response
+        return data
+      }
+
+      async fetchImages() {
+          console.log("about to query")
+        return this._query({
+          sql: "select url from images"
+        })
+    }
+        
+      async fetchImage(index) {
+        return this._query({
+            sql: `select url, image from images where id = $1`,
+            params: [index]
+        })
+      }
+        
+      async addImage(index, name, url) {
+        const base64 = await imageToBase64(url)
+        return this._query({
+            sql: `insert into images (id, url, image) values ($1, $2, $3)`,
+            params: [index, name, base64]
+        })
+      }
+    }
+
+    async function imageToBase64(url) {
+        const response = await fetch(url)
+        const blob = await response.blob()
+        
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onloadend = () => resolve(reader.result)
+            reader.onerror = reject
+            reader.readAsDataURL(blob)
+        })
+    }
+
+  </script>
+
+
+  <script>
+
+    // State.
+    let images = []
+    let currentImage = -1
+
+    Neutralino.init()
+    Neutralino.window.setSize({width: 1200, height: 1000})
+    
+    const api = new API()
+    
+    const init = async () => { 
+        // Load initial images.
+        const data = await api.fetchImages()
+        images = data.rows
+        console.log(images)
+        images.forEach((img, idx) => createImageEntry(img[0], idx))
+        if (images.length > 0) {
+            await selectImage(0)
+        }
+    }
+    
+    const createImageEntry = (name, idx) => {
+        const ul = document.getElementById("images")
+        const elt = document.createElement("div")
+        elt.setAttribute("id", `image-${idx}`)
+        elt.addEventListener("click", () => selectImage(idx))
+        elt.innerText = name
+        ul.appendChild(elt)
+    }    
+    
+    const selectImage = async (index) => {
+        if (currentImage >= 0) {
+            document.getElementById(`image-${currentImage}`).classList.remove("selected")
+        }
+        const data = await api.fetchImage(index)
+        if (data.rows.length === 0) {
+            return
+        }
+        const img = data.rows[0]
+        document.getElementById("image").setAttribute("src", img[1])
+        document.getElementById(`image-${index}`).classList.add("selected")
+        currentImage = index
+    }
+    
+    document.getElementById("load-button").addEventListener("click", async () => {
+        const url = document.getElementById("load-input").value
+        document.getElementById("load-input").value = ""
+        if (url.trim().length > 0) {
+            const newIndex = images.length
+            // Bit of a hack...
+            const name = url.split('/').pop()
+            await api.addImage(newIndex, name, url)
+            createImageEntry(name, newIndex)
+            images.push(name)
+            selectImage(newIndex)
+        }
+    })
+
+    
+                                                            
+    document.addEventListener("DOMContentLoaded", init)
+    
+  </script>
+
+</body>
+</html>
