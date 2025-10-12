@@ -10,8 +10,6 @@ import (
 	"os"
 )
 
-// Mostly adapted from https://github.com/gorilla/websocket/blob/main/examples/echo/client.go
-
 func main() {
 	log.Println("starting Neutralinojs SQLite extension")
 
@@ -38,6 +36,38 @@ func main() {
 	}
 }
 
+// Create a message processor function specialized to a given database
+// connection. This makes sure that the message processor function has
+// access to the connection without making it global.
+//
+// Messages with event "query" have data of the form:
+//
+//	{
+//	  "sql": <query string>,
+//	  "params": [<value>, ...]
+//	}
+//
+// where params is optional, and when provided its values go to fill the
+// query parameters $1, $2, $3, ...
+// These message return an object
+//
+//	{
+//	  "rows": [<row>, ...]
+//	}
+//
+// with the rows of results from the query, where each row is an array of values.
+//
+// Messages with event "exec" have data of the form:
+//
+//	{
+//	  "sql": <query string>,
+//	  "params": [<value>, ...]
+//	}
+//
+// where params is optional, and when provided its values go to fill the
+// query parameters $1, $2, $3, ...
+// These messages do not return a result.
+// (They are meant to execute DDL non-queries.)
 func mkProcessMsg(db *sql.DB) neutralinoext.ProcessFn {
 	processMsg := func(event string, data any) (map[string]any, error) {
 		switch event {
@@ -52,6 +82,7 @@ func mkProcessMsg(db *sql.DB) neutralinoext.ProcessFn {
 	return processMsg
 }
 
+// Process a "query" message, with data containing the data object.
 func processQuery(db *sql.DB, data any) (map[string]any, error) {
 	dataObj, ok := data.(map[string]any)
 	if !ok {
@@ -92,6 +123,7 @@ func processQuery(db *sql.DB, data any) (map[string]any, error) {
 	return result, nil
 }
 
+// Process an "exec" message, with data containing the data object.
 func processExec(db *sql.DB, data any) (map[string]any, error) {
 	dataObj, ok := data.(map[string]any)
 	if !ok {
@@ -114,6 +146,8 @@ func processExec(db *sql.DB, data any) (map[string]any, error) {
 	result["done"] = true
 	return result, nil
 }
+
+// Helper functions to extract key values out of an unmarshalled JSON object.
 
 func getString(m map[string]any, key string) (string, error) {
 	ifc, ok := m[key]
