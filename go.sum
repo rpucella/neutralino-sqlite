@@ -4,5 +4,9 @@ github.com/gorilla/websocket v1.5.3 h1:saDtZ6Pbx/0u+bgYQ3q96pZgCzfhKXGPqt7kZ72aN
 github.com/gorilla/websocket v1.5.3/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/mattn/go-sqlite3 v1.14.32 h1:JD12Ag3oLy1zQA+BNn74xRgaBbdhbNIDYvQUEuuErjs=
 github.com/mattn/go-sqlite3 v1.14.32/go.mod h1:Uh1q+B4BYcTPb+yiD3kU8Ct7aC0hY9fxUwlHK0RXw+Y=
+github.com/rpucella/go-neutralino-extension v0.1.3 h1:faWar+2T3GX5cRDlhmtdWGbasdPHvN/zS0bF+x0TtKM=
+github.com/rpucella/go-neutralino-extension v0.1.3/go.mod h1:EvVLQnvXZVBWJSnEMIqH3eJCLNeK/sdpKn/uoSpuejE=
+github.com/rpucella/go-neutralino-extension v0.1.4 h1:o2QEbGSjF8shjjEDe+xcSax31RJHbd9KIX1h/T8FAkI=
+github.com/rpucella/go-neutralino-extension v0.1.4/go.mod h1:azssRRt6NCUPsGojcw3mP7Z7fritEvIb0HeUZgx6zKM=
 github.com/rpucella/go-neutralino-extensions v0.1.1 h1:NQRFKAiU8PklA2B7TtGFrlL4fMYueP2nA+N0uA2JIkM=
 github.com/rpucella/go-neutralino-extensions v0.1.1/go.mod h1:EvVLQnvXZVBWJSnEMIqH3eJCLNeK/sdpKn/uoSpuejE=
